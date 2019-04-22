@@ -1,48 +1,271 @@
-pub enum TokenKind {
-    Identifier,
-    LeftParen,
-    RightParen,
-    Number,
-    String,
-    Keyword,
-    ReaderMacro
-}
-pub struct Token {
-    pub text: String,
-    pub kind: TokenKind,
+use failure::Error;
+use crate::tokenizer::TokenizerError::{NotAnEscapableCharacter, UnexpectedEndOfInput, InvalidNumberCharacter};
+
+#[derive(Debug, Fail)]
+pub enum TokenizerError {
+    #[fail(display = "Unexpected character: {}", _0)]
+    UnexpectedCharacter(char),
+
+    #[fail(display = "Unexpected end of input")]
+    UnexpectedEndOfInput,
+
+    #[fail(display = "This is not an escapable character: {}", _0)]
+    NotAnEscapableCharacter(char),
+
+    #[fail(display = "Invalid character in number: {}", _0)]
+    InvalidNumberCharacter(char),
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum ValueType {
+    String,
+    Number,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Token {
+    Identifier(String),
+    LeftParen,
+    RightParen,
+    Value(String, ValueType),
+//    Number(String),
+//    String(String),
+//    Keyword(String),
+//    ReaderMacro
+}
+
+#[derive(Debug, Clone)]
 pub struct Tokenizer {
-    to_read: String,
+    to_read: Vec<char>,
     position: usize,
 }
 
-impl Iterator for Tokenizer {
-    type Item = Token;
+impl Tokenizer {
+    pub fn from_string(s: &str) -> Self {
+        Self {
+            to_read: s.chars().collect(),
+            position: 0
+        }
+    }
 
-    fn next(&mut self) -> Option<Item> {
+    pub fn next(&mut self) -> Result<Token, Error> {
 
-        let mut current_token = String::new();
+        for n in 1..=100 {
+            if self.can_read() {
+                match self.peek_char() {
+                    '(' => {
+                        println!("Left paren");
+                        self.consume_char();
+                        return Ok(Token::LeftParen)
+                    }
+                    ')' => {
+                        println!("Right paren");
+                        self.consume_char();
+                        return Ok(Token::RightParen)
+                    },
+                    ' ' => {
+                        println!("Skip whitespace");
+                        self.consume_char();
+                        continue
+                    },
+                    c if c.is_digit(10) => {
+                        println!("Read number");
+                        return self.read_number()
+                    },
+                    '"' => {
+                        println!("Read string");
+                        return self.read_string()
+                    },
+                    c if c.is_alphanumeric() => {
+                        println!("Read identifier");
+                        return self.read_identifier()
+                    },
+                    c => {
+                        println!("Unexpected char {}", c);
+                        break;
+                    }
+                }
+            } else {
+                return Err(UnexpectedEndOfInput.into())
 
-
-        for char in self.to_read.chars() {
-            // TODO
+            }
         }
 
-        None
+        Err(UnexpectedEndOfInput.into())
+    }
+
+
+    fn can_read(&self) -> bool { self.position < self.to_read.len() }
+    fn peek_char(&self) -> char { self.to_read[self.position] }
+
+    fn consume_char(&mut self) -> char {
+        let ch = self.peek_char();
+        self.position += 1;
+        ch
+    }
+
+    fn read_identifier(&mut self) -> Result<Token, Error> {
+        let mut current_token = String::new();
+        loop {
+            if self.can_read() {
+                match self.peek_char() {
+                    '[' | ']' | '{' | '}' | '(' | ')' | ' ' => break,
+                    _ => {
+                        current_token.push(self.consume_char())
+                    },
+                }
+            } else {
+                break;
+            }
+        }
+
+        Ok(Token::Identifier(current_token))
+    }
+
+    fn read_string(&mut self) -> Result<Token, Error> {
+        let mut current_token = String::new();
+        self.consume_char(); // consume starting quote
+        loop {
+            if self.can_read() {
+                println!("{}", self.peek_char());
+                match self.peek_char() {
+                    '"' => {
+                        self.consume_char();
+                        break
+                    },
+                    '\\' => {
+                        self.consume_char(); // consume '/'
+                        let to_escape = self.consume_char();
+                        let escaped = self.get_escaped_char(to_escape)?;
+                        current_token.push(escaped);
+                    }
+                    _ => current_token.push(self.consume_char()),
+                }
+            }
+        }
+
+        Ok(Token::Value(current_token, ValueType::String))
+    }
+
+    fn get_escaped_char(&self, c: char) -> Result<char, Error> {
+        Ok(match c {
+            'n' => '\n',
+            't' => '\t',
+            '\\' => '\\',
+            _ => return Err(NotAnEscapableCharacter(c).into())
+        })
+    }
+
+    fn read_number(&mut self) -> Result<Token, Error> {
+        let mut current_token = String::new();
+        loop {
+            if self.can_read() {
+                match self.peek_char() {
+                    '.' => current_token.push(self.consume_char()),
+                    c if c.is_digit(10) => current_token.push(self.consume_char()),
+                    ' ' | ',' => break,
+                    c => return Err(InvalidNumberCharacter(self.consume_char()).into())
+                }
+            } else {
+                break
+            }
+        }
+
+        Ok(Token::Value(current_token, ValueType::Number))
     }
 }
 
+#[cfg(test)]
+mod test {
+    use super::*;
 
-#[test]
-fn hello() {
-    let code = "(println \"Hello World\")";
-    let mut tokenizer = Tokenizer {
-        to_read: code.to_owned(),
-        position: 0
-    };
 
-    println!(tokenizer.next())
+    mod basic {
+        use super::*;
+        #[test]
+        fn should_read_identifier() {
+            // given
+            let code = "identifier";
+            let mut tokenizer = Tokenizer::from_string(code);
+
+            // when
+            let token = tokenizer.next().unwrap();
+
+            // then
+            assert_eq!(token, Token::Identifier(code.to_owned()));
+        }
+
+        #[test]
+        fn should_read_string() {
+            // given
+            let code = "\"some string\"";
+            let mut tokenizer = Tokenizer::from_string(code);
+
+            // expect
+            assert_eq!(Token::Value("some string".to_owned(), ValueType::String), tokenizer.next().unwrap())
+        }
+
+        #[test]
+        fn should_read_integer() {
+            // given
+            let code = "1234";
+            let mut tokenizer = Tokenizer::from_string(code);
+
+            // expect
+            assert_eq!(Token::Value("1234".to_owned(), ValueType::Number), tokenizer.next().unwrap())
+        }
+
+        #[test]
+        fn should_read_float() {
+            // given
+            let code = "12.34";
+            let mut tokenizer = Tokenizer::from_string(code);
+
+            // expect
+            assert_eq!(Token::Value("12.34".to_owned(), ValueType::Number), tokenizer.next().unwrap())
+        }
+    }
+
+    #[test]
+    fn should_escape_string_characters() {
+        for (to_escape, escaped) in &[('n', '\n'), ('t', '\t'), ('\\', '\\')] {
+            // given
+            let code = format!("\"some\\{}string\"", to_escape);
+            let mut tokenizer = Tokenizer::from_string(&code);
+
+            // expect
+            assert_eq!(Token::Value(format!("some{}string", escaped), ValueType::String), tokenizer.next().unwrap())
+        }
+    }
+
+    #[test]
+    fn should_read_simple_function_call() {
+        // given
+        let code = "(some-func)";
+        let mut tokenizer = Tokenizer::from_string(code);
+
+        // expect
+        assert_eq!(Token::LeftParen, tokenizer.next().unwrap());
+        assert_eq!(Token::Identifier("some-func".to_owned()), tokenizer.next().unwrap());
+        assert_eq!(Token::RightParen, tokenizer.next().unwrap());
+    }
+
+    #[test]
+    fn should_read_function_call_with_arguments() {
+        // given
+        let code = "(some-func ident \"string\" 10 12.6)";
+        let mut tokenizer = Tokenizer::from_string(code);
+
+        // expect
+        assert_eq!(Token::LeftParen, tokenizer.next().unwrap());
+        assert_eq!(Token::Identifier("some-func".to_owned()), tokenizer.next().unwrap());
+        assert_eq!(Token::Identifier("ident".to_owned()), tokenizer.next().unwrap());
+        assert_eq!(Token::Value("string".to_owned(), ValueType::String), tokenizer.next().unwrap());
+        assert_eq!(Token::Value("10".to_owned(), ValueType::Number), tokenizer.next().unwrap());
+        assert_eq!(Token::Value("12.6".to_owned(), ValueType::Number), tokenizer.next().unwrap());
+        assert_eq!(Token::RightParen, tokenizer.next().unwrap());
+    }
+
+
 }
-
 
