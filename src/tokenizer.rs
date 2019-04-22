@@ -3,9 +3,6 @@ use crate::tokenizer::TokenizerError::{NotAnEscapableCharacter, UnexpectedEndOfI
 
 #[derive(Debug, Fail)]
 pub enum TokenizerError {
-    #[fail(display = "Unexpected character: {}", _0)]
-    UnexpectedCharacter(char),
-
     #[fail(display = "Unexpected end of input")]
     UnexpectedEndOfInput,
 
@@ -28,10 +25,6 @@ pub enum Token {
     LeftParen,
     RightParen,
     Value(String, ValueType),
-//    Number(String),
-//    String(String),
-//    Keyword(String),
-//    ReaderMacro
 }
 
 #[derive(Debug, Clone)]
@@ -50,7 +43,7 @@ impl Tokenizer {
 
     pub fn next(&mut self) -> Result<Token, Error> {
 
-        for n in 1..=100 {
+        loop {
             if self.can_read() {
                 match self.peek_char() {
                     '(' => {
@@ -163,8 +156,8 @@ impl Tokenizer {
                 match self.peek_char() {
                     '.' => current_token.push(self.consume_char()),
                     c if c.is_digit(10) => current_token.push(self.consume_char()),
-                    ' ' | ',' => break,
-                    c => return Err(InvalidNumberCharacter(self.consume_char()).into())
+                    ' ' | ',' | ')' | ']' | '}' => break,
+                    _ => return Err(InvalidNumberCharacter(self.consume_char()).into())
                 }
             } else {
                 break
@@ -265,7 +258,5 @@ mod test {
         assert_eq!(Token::Value("12.6".to_owned(), ValueType::Number), tokenizer.next().unwrap());
         assert_eq!(Token::RightParen, tokenizer.next().unwrap());
     }
-
-
 }
 
