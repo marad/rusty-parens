@@ -42,39 +42,31 @@ impl Tokenizer {
     }
 
     pub fn next(&mut self) -> Result<Token, Error> {
-
         loop {
             if self.can_read() {
                 match self.peek_char() {
                     '(' => {
-                        println!("Left paren");
                         self.consume_char();
                         return Ok(Token::LeftParen)
                     }
                     ')' => {
-                        println!("Right paren");
                         self.consume_char();
                         return Ok(Token::RightParen)
                     },
                     ' ' => {
-                        println!("Skip whitespace");
                         self.consume_char();
                         continue
                     },
                     c if c.is_digit(10) => {
-                        println!("Read number");
                         return self.read_number()
                     },
                     '"' => {
-                        println!("Read string");
                         return self.read_string()
                     },
                     c if c.is_alphanumeric() => {
-                        println!("Read identifier");
                         return self.read_identifier()
                     },
-                    c => {
-                        println!("Unexpected char {}", c);
+                    _ => {
                         break;
                     }
                 }
@@ -120,7 +112,6 @@ impl Tokenizer {
         self.consume_char(); // consume starting quote
         loop {
             if self.can_read() {
-                println!("{}", self.peek_char());
                 match self.peek_char() {
                     '"' => {
                         self.consume_char();
