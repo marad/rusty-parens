@@ -3,6 +3,7 @@ extern crate failure;
 
 mod reader;
 mod tokenizer;
+mod eval;
 
 fn main() {
     println!("Rusty Parens");
