@@ -4,8 +4,20 @@ use std::cell::RefCell;
 use crate::reader::Expression::*;
 use std::string::String as StdString;
 
-trait Function {
-    fn call(&self);
+//trait Function: PartialEq {
+//    fn call(&self, args: Vec<Expression>) -> Expression;
+//}
+#[derive(Debug, Clone, PartialEq)]
+pub enum Function {
+    Identity,
+}
+
+impl Function {
+    pub fn call(&self, args: &[Expression]) -> Expression {
+        match self {
+            Function::Identity => args.first().unwrap().clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -14,10 +26,12 @@ pub enum Expression {
     String(StdString),
     Integer(i32),
     Float(f32),
+//    Fn(Box<Function>),
+    Fn(Function),
     List(Vec<Expression>),
 }
 
-struct Reader {
+pub struct Reader {
     tokenizer: RefCell<Tokenizer>,
 }
 
