@@ -53,7 +53,7 @@ impl Tokenizer {
                         self.consume_char();
                         return Ok(Token::RightParen)
                     },
-                    ' ' => {
+                    ' ' | '\n' | '\t' => {
                         self.consume_char();
                         continue
                     },
@@ -147,7 +147,7 @@ impl Tokenizer {
                 match self.peek_char() {
                     '.' => current_token.push(self.consume_char()),
                     c if c.is_digit(10) => current_token.push(self.consume_char()),
-                    ' ' | ',' | ')' | ']' | '}' => break,
+                    ' ' | ',' | ')' | ']' | '}' | '\n' | '\t' => break,
                     _ => return Err(InvalidNumberCharacter(self.consume_char()).into())
                 }
             } else {
@@ -207,6 +207,26 @@ mod test {
 
             // expect
             assert_eq!(Token::Value("12.34".to_owned(), ValueType::Number), tokenizer.next().unwrap())
+        }
+
+        #[test]
+        fn should_ignore_leading_whitespace() {
+            // given
+            let code = " \n\t  123";
+            let mut tokenizer = Tokenizer::from_string(code);
+
+            // expect
+            assert_eq!(Token::Value("123".to_owned(), ValueType::Number), tokenizer.next().unwrap())
+        }
+
+        #[test]
+        fn should_ignore_trailing_whitespace_when_reading_numbers() {
+            // given
+            let code = "123\t\n ";
+            let mut tokenizer = Tokenizer::from_string(code);
+
+            // expect
+            assert_eq!(Token::Value("123".to_owned(), ValueType::Number), tokenizer.next().unwrap())
         }
     }
 

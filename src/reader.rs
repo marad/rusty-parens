@@ -10,12 +10,23 @@ use std::string::String as StdString;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Function {
     Identity,
+    IntegerAdd,
 }
 
 impl Function {
     pub fn call(&self, args: &[Expression]) -> Expression {
         match self {
             Function::Identity => args.first().unwrap().clone(),
+            Function::IntegerAdd => {
+                let a = args.first().unwrap();
+                let b = args.get(1).unwrap();
+                match (a, b) {
+                    (Integer(a), Integer(b)) =>
+                        Expression::Integer(a+b),
+                    _ => Expression::String("TODO".to_owned())
+                }
+            }
+
         }
     }
 }

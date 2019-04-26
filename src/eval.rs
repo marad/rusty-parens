@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-use crate::reader::{Expression as Expr, Function};
-use failure::Error;
+use crate::reader::{Expression as Expr, Expression};
 use crate::eval::EvalError::NotAFunction;
 
 #[derive(Debug, Fail)]
@@ -14,10 +13,22 @@ pub struct Scope {
     names: HashMap<String, Expr>
 }
 
+impl Scope {
+    pub fn new() -> Self {
+        Self {
+            names: HashMap::new()
+        }
+    }
+
+    pub fn put(&mut self, name: &ToString, value: Expression) {
+        self.names.insert(name.to_string(), value);
+    }
+}
+
 pub fn eval(scope: &mut Scope, expr: &Expr) -> Result<Expr, EvalError> {
     match expr {
         Expr::Identifier(ident) =>
-            Ok(scope.names[ident].clone()),
+            Ok(scope.names[ident].clone()), // todo: handle ident not defined
         Expr::List(data) =>
             eval_list(scope, &data),
         c => Ok(c.clone())
@@ -40,6 +51,8 @@ mod test {
         use super::*;
         use crate::reader::Reader;
         use crate::reader::Expression::Integer;
+        use failure::Error;
+        use crate::reader::Function;
 
         #[test]
         fn should_eval_values_to_themselves() -> Result<(), Error> {
@@ -96,7 +109,6 @@ mod test {
 
             // then
             assert_eq!(Integer(5), result);
-
             Ok(())
         }
     }
