@@ -29,20 +29,20 @@ fn main() -> Result<(), Error> {
 }
 
 fn read() -> Result<Expression, Error> {
-    print!("> "); io::stdout().flush();
+    print!("> "); io::stdout().flush()?;
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer)?;
     Reader::from_string(&buffer).read()
 }
 
 fn print(expr: Expression) {
-    println!("{:?}", expr)
+    println!("{}", expr)
 }
 
 fn integer_add(exprs: &[Expression]) -> Result<Expression, Error> {
     match exprs {
         [Expression::Integer(a), Expression::Integer(b)] =>
             Ok(Expression::Integer(a+b)),
-        _ => Ok(Expression::String("Incompatibile types".to_owned())),
+        _ => Ok(Expression::String("Incompatible types".to_owned())),
     }
 }

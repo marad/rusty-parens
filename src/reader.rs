@@ -5,6 +5,7 @@ use crate::reader::Expression::*;
 use std::string::String as StdString;
 use std::fmt::{Debug, Formatter};
 use std::any::Any;
+use std::fmt::Display;
 
 #[derive(Clone)]
 pub enum Function {
@@ -30,7 +31,7 @@ impl Function {
         match self {
             Function::Native(f) =>
                 f(args),
-            Function::Regular(exprs) =>
+            Function::Regular(_exprs) =>
                 unimplemented!(),
         }
     }
@@ -42,9 +43,26 @@ pub enum Expression {
     String(StdString),
     Integer(i32),
     Float(f32),
-//    Fn(Box<Function>),
     Fn(Function),
     List(Vec<Expression>),
+}
+
+impl Display for Expression {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        match self {
+            Expression::Float(value) => f.write_fmt(format_args!("{}", value))?,
+            Expression::Integer(value) => f.write_fmt(format_args!("{}", value))?,
+            Expression::Fn(_) => f.write_str("<function>")?,
+            Expression::Identifier(value) => f.write_fmt(format_args!("{}", value))?,
+            Expression::String(value) => f.write_fmt(format_args!("{}", value))?,
+            Expression::List(values) => {
+                f.write_str("[")?;
+                values.iter().map(|s| Display::fmt(s, f)).collect::<Result<Vec<_>, _>>()?;
+                f.write_str("]")?;
+            },
+        }
+        Ok(())
+    }
 }
 
 pub struct Reader {

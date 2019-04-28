@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 use crate::reader::Expression;
-use std::cell::{RefCell, Cell};
-use core::borrow::Borrow;
 
 pub struct Scope {
     names: HashMap<String, Expression>

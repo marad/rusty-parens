@@ -1,10 +1,9 @@
 mod scope;
 mod error;
 
-use crate::reader::{Expression as Expr, Expression};
-use failure::Error;
+use crate::reader::Expression as Expr;
 pub use scope::{Scope, ScopeError};
-pub use error::EvalError;
+use error::EvalError;
 
 pub fn eval(scope: &Scope, expr: &Expr) -> Result<Expr, EvalError> {
     match expr {

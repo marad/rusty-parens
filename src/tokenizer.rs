@@ -63,20 +63,14 @@ impl Tokenizer {
                     '"' => {
                         return self.read_string()
                     },
-                    c if c.is_alphanumeric() => {
+                    _ => {
                         return self.read_identifier()
                     },
-                    _ => {
-                        break;
-                    }
                 }
             } else {
                 return Err(UnexpectedEndOfInput.into())
-
             }
         }
-
-        Err(UnexpectedEndOfInput.into())
     }
 
 

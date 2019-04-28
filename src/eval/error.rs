@@ -4,7 +4,7 @@ use crate::reader::Expression;
 
 #[derive(Debug, Fail)]
 pub enum EvalError {
-    #[fail(display = "{:?} is not a function", _0)]
+    #[fail(display = "{} is not a function", _0)]
     NotAFunction(Expression),
 
     #[fail(display = "Scope error: {}", _0)]
