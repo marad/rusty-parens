@@ -5,7 +5,7 @@ use crate::reader::Expression as Expr;
 pub use scope::{Scope, ScopeError};
 use error::EvalError;
 
-pub fn eval(scope: &Scope, expr: &Expr) -> Result<Expr, EvalError> {
+pub fn eval(scope: &mut Scope, expr: &Expr) -> Result<Expr, EvalError> {
     match expr {
         Expr::Identifier(ident) =>
             Ok(scope.get(ident)?.clone()),
@@ -15,7 +15,7 @@ pub fn eval(scope: &Scope, expr: &Expr) -> Result<Expr, EvalError> {
     }
 }
 
-fn eval_list(scope: &Scope, list: &Vec<Expr>) -> Result<Expr, EvalError> {
+fn eval_list(scope: &mut Scope, list: &[Expr]) -> Result<Expr, EvalError> {
     let func = eval(scope, &list[0])?;
     match func {
         Expr::Fn(func) => Ok(func.call(&list[1..])?),

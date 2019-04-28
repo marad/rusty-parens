@@ -17,8 +17,8 @@ impl Scope {
     }
 
     pub fn get(&self, name: &str) -> Result<Expression, ScopeError> {
-        self.names.get(name).ok_or(ScopeError::IdentifierNotFound(name.to_string()))
-            .map(|x| x.clone())
+        self.names.get(name).ok_or_else(||ScopeError::IdentifierNotFound(name.to_string()))
+            .map(Clone::clone)
     }
 }
 

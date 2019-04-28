@@ -95,8 +95,8 @@ impl Reader {
         })
     }
 
-    fn read_number(&self, value: &StdString) -> Result<Expression, Error> {
-        Ok(if value.contains(".") {
+    fn read_number(&self, value: &str) -> Result<Expression, Error> {
+        Ok(if value.contains('.') {
             let val = value.parse::<f32>()?;
             Expression::Float(val)
         }
