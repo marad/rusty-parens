@@ -23,7 +23,7 @@ fn eval_list(scope: &mut Scope, list: &[Expression]) -> Result<Expression, EvalE
                 .map(|expr| eval(scope, expr))
                 .collect::<Result<Vec<_>, _>>()?;
             Ok(func.call(&args)?)
-        },
+        }
         expr => Err(EvalError::NotAFunction(expr)),
     }
 }
