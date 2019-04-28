@@ -88,6 +88,7 @@ impl Tokenizer {
             if self.can_read() {
                 match self.peek_char() {
                     '[' | ']' | '{' | '}' | '(' | ')' | ' ' => break,
+                    c if c.is_whitespace() => break,
                     _ => current_token.push(self.consume_char()),
                 }
             } else {
@@ -138,7 +139,8 @@ impl Tokenizer {
                 match self.peek_char() {
                     '.' => current_token.push(self.consume_char()),
                     c if c.is_digit(10) => current_token.push(self.consume_char()),
-                    ' ' | ',' | ')' | ']' | '}' | '\n' | '\t' => break,
+                    ' ' | ',' | ')' | ']' | '}' => break,
+                    c if c.is_whitespace() => break,
                     _ => return Err(InvalidNumberCharacter(self.consume_char()).into()),
                 }
             } else {

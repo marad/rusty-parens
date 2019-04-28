@@ -1,22 +1,22 @@
 mod error;
 mod scope;
 
-use crate::reader::Expression as Expr;
+use crate::reader::Expression;
 use error::EvalError;
 pub use scope::{Scope, ScopeError};
 
-pub fn eval(scope: &mut Scope, expr: &Expr) -> Result<Expr, EvalError> {
+pub fn eval(scope: &mut Scope, expr: &Expression) -> Result<Expression, EvalError> {
     match expr {
-        Expr::Identifier(ident) => Ok(scope.get(ident)?.clone()),
-        Expr::List(data) => eval_list(scope, &data),
+        Expression::Identifier(ident) => Ok(scope.get(ident)?),
+        Expression::List(data) => eval_list(scope, &data),
         c => Ok(c.clone()),
     }
 }
 
-fn eval_list(scope: &mut Scope, list: &[Expr]) -> Result<Expr, EvalError> {
+fn eval_list(scope: &mut Scope, list: &[Expression]) -> Result<Expression, EvalError> {
     let func = eval(scope, &list[0])?;
     match func {
-        Expr::Fn(func) => Ok(func.call(&list[1..])?),
+        Expression::Fn(func) => Ok(func.call(&list[1..])?),
         expr => Err(EvalError::NotAFunction(expr)),
     }
 }
@@ -27,7 +27,7 @@ mod test {
 
     mod basic {
         use super::*;
-        use crate::reader::Expression::Integer;
+        use crate::reader::Expression as Expr;
         use crate::reader::Function;
         use crate::reader::Reader;
         use failure::Error;
@@ -91,7 +91,7 @@ mod test {
             let result = eval(&mut scope, &expr)?;
 
             // then
-            assert_eq!(Integer(5), result);
+            assert_eq!(Expr::Integer(5), result);
             Ok(())
         }
     }
