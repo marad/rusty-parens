@@ -16,13 +16,15 @@ fn main() -> Result<(), Error> {
     println!("Rusty Parens");
     let mut scope = Scope::new();
 
-    scope.put(&"identity", Expression::Fn(Function::Identity));
-    scope.put(&"+", Expression::Fn(Function::IntegerAdd));
+    scope.put(&"+", Expression::Fn(Function::Native(integer_add)));
 
     loop {
         let expr = read()?;
-        let result = eval(&mut scope, &expr)?;
-        print(result);
+        let result = eval(&mut scope, &expr);
+        match result {
+            Ok(result) => print(result),
+            Err(error) => eprintln!("{}", error),
+        }
     }
 }
 
@@ -35,4 +37,12 @@ fn read() -> Result<Expression, Error> {
 
 fn print(expr: Expression) {
     println!("{:?}", expr)
+}
+
+fn integer_add(exprs: &[Expression]) -> Result<Expression, Error> {
+    match exprs {
+        [Expression::Integer(a), Expression::Integer(b)] =>
+            Ok(Expression::Integer(a+b)),
+        _ => Ok(Expression::String("Incompatibile types".to_owned())),
+    }
 }

@@ -3,30 +3,35 @@ use failure::Error;
 use std::cell::RefCell;
 use crate::reader::Expression::*;
 use std::string::String as StdString;
+use std::fmt::{Debug, Formatter};
+use std::any::Any;
 
-//trait Function: PartialEq {
-//    fn call(&self, args: Vec<Expression>) -> Expression;
-//}
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone)]
 pub enum Function {
-    Identity,
-    IntegerAdd,
+    Native(fn(&[Expression]) -> Result<Expression, Error>),
+    Regular(Vec<Expression>),
+}
+
+impl Debug for Function {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        f.write_str("<function>")?;
+        Ok(())
+    }
+}
+
+impl PartialEq<Function> for Function {
+    fn eq(&self, other: &Function) -> bool {
+        self.type_id() == other.type_id()
+    }
 }
 
 impl Function {
-    pub fn call(&self, args: &[Expression]) -> Expression {
+    pub fn call(&self, args: &[Expression]) -> Result<Expression, Error> {
         match self {
-            Function::Identity => args.first().unwrap().clone(),
-            Function::IntegerAdd => {
-                let a = args.first().unwrap();
-                let b = args.get(1).unwrap();
-                match (a, b) {
-                    (Integer(a), Integer(b)) =>
-                        Expression::Integer(a+b),
-                    _ => Expression::String("TODO".to_owned())
-                }
-            }
-
+            Function::Native(f) =>
+                f(args),
+            Function::Regular(exprs) =>
+                unimplemented!(),
         }
     }
 }

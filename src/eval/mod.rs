@@ -1,45 +1,26 @@
-use std::collections::HashMap;
+mod scope;
+mod error;
+
 use crate::reader::{Expression as Expr, Expression};
-use crate::eval::EvalError::NotAFunction;
+use failure::Error;
+pub use scope::{Scope, ScopeError};
+pub use error::EvalError;
 
-#[derive(Debug, Fail)]
-pub enum EvalError {
-    #[fail(display = "{:?} is not a function", _0)]
-    NotAFunction(Expr),
-}
-
-
-pub struct Scope {
-    names: HashMap<String, Expr>
-}
-
-impl Scope {
-    pub fn new() -> Self {
-        Self {
-            names: HashMap::new()
-        }
-    }
-
-    pub fn put(&mut self, name: &ToString, value: Expression) {
-        self.names.insert(name.to_string(), value);
-    }
-}
-
-pub fn eval(scope: &mut Scope, expr: &Expr) -> Result<Expr, EvalError> {
+pub fn eval(scope: &Scope, expr: &Expr) -> Result<Expr, EvalError> {
     match expr {
         Expr::Identifier(ident) =>
-            Ok(scope.names[ident].clone()), // todo: handle ident not defined
+            Ok(scope.get(ident)?.clone()),
         Expr::List(data) =>
             eval_list(scope, &data),
         c => Ok(c.clone())
     }
 }
 
-fn eval_list(scope: &mut Scope, list: &Vec<Expr>) -> Result<Expr, EvalError> {
+fn eval_list(scope: &Scope, list: &Vec<Expr>) -> Result<Expr, EvalError> {
     let func = eval(scope, &list[0])?;
     match func {
-        Expr::Fn(func) => Ok(func.call(&list[1..])),
-        expr => Err(NotAFunction(expr))
+        Expr::Fn(func) => Ok(func.call(&list[1..])?),
+        expr => Err(EvalError::NotAFunction(expr))
     }
 }
 
@@ -57,9 +38,7 @@ mod test {
         #[test]
         fn should_eval_values_to_themselves() -> Result<(), Error> {
             // given
-            let mut scope = Scope {
-                names: HashMap::new()
-            };
+            let mut scope = Scope::new();
             let integer_expr = Expr::Integer(42);
             let float_expr = Expr::Float(3.14);
             let string_expr = Expr::String("hello".to_owned());
@@ -77,12 +56,10 @@ mod test {
             let integer_expr = Expr::Integer(42);
             let float_expr = Expr::Float(3.14);
             let string_expr = Expr::String("hello".to_owned());
-            let mut scope = Scope {
-                names: HashMap::new()
-            };
-            scope.names.insert("integer".to_owned(), integer_expr.clone());
-            scope.names.insert("float".to_owned(), float_expr.clone());
-            scope.names.insert("string".to_owned(), string_expr.clone());
+            let mut scope = Scope::new();
+            scope.put(&"integer", integer_expr.clone());
+            scope.put(&"float", float_expr.clone());
+            scope.put(&"string", string_expr.clone());
 
             // expect
             assert_eq!(integer_expr, eval(&mut scope, &Expr::Identifier("integer".to_owned()))?);
@@ -97,11 +74,11 @@ mod test {
         #[test]
         fn should_evaluate_functions() -> Result<(), Error>{
             // given
-            let func = Expr::Fn(Function::Identity);
-            let mut scope = Scope {
-                names: HashMap::new()
-            };
-            scope.names.insert("identity".to_owned(), func.clone());
+            let native_func : fn(&[Expression]) -> Result<Expression, Error> =
+                |exprs| Ok(exprs.first().unwrap().clone());
+            let func = Expr::Fn(Function::Native(native_func));
+            let mut scope = Scope::new();
+            scope.put(&"identity", func.clone());
             let expr = Reader::from_string("(identity 5)").read()?;
 
             // when
