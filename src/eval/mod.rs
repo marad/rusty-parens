@@ -1,9 +1,10 @@
+use super::reader::Expression;
+
+use self::error::EvalError;
+pub use self::scope::{Scope, ScopeError};
+
 mod error;
 mod scope;
-
-use crate::reader::Expression;
-use error::EvalError;
-pub use scope::{Scope, ScopeError};
 
 pub fn eval(scope: &mut Scope, expr: &Expression) -> Result<Expression, EvalError> {
     match expr {
@@ -32,11 +33,13 @@ mod test {
     use super::*;
 
     mod basic {
-        use super::*;
+        use failure::Error;
+
         use crate::reader::Expression as Expr;
         use crate::reader::Function;
         use crate::reader::Reader;
-        use failure::Error;
+
+        use super::*;
 
         #[test]
         fn should_eval_values_to_themselves() -> Result<(), Error> {
