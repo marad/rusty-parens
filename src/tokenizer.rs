@@ -1,5 +1,7 @@
+use crate::tokenizer::TokenizerError::{
+    InvalidNumberCharacter, NotAnEscapableCharacter, UnexpectedEndOfInput,
+};
 use failure::Error;
-use crate::tokenizer::TokenizerError::{NotAnEscapableCharacter, UnexpectedEndOfInput, InvalidNumberCharacter};
 
 #[derive(Debug, Fail)]
 pub enum TokenizerError {
@@ -37,7 +39,7 @@ impl Tokenizer {
     pub fn from_string(s: &str) -> Self {
         Self {
             to_read: s.chars().collect(),
-            position: 0
+            position: 0,
         }
     }
 
@@ -47,35 +49,32 @@ impl Tokenizer {
                 match self.peek_char() {
                     '(' => {
                         self.consume_char();
-                        return Ok(Token::LeftParen)
+                        return Ok(Token::LeftParen);
                     }
                     ')' => {
                         self.consume_char();
-                        return Ok(Token::RightParen)
-                    },
+                        return Ok(Token::RightParen);
+                    }
                     ' ' | '\n' | '\t' => {
                         self.consume_char();
-                        continue
-                    },
-                    c if c.is_digit(10) => {
-                        return self.read_number()
-                    },
-                    '"' => {
-                        return self.read_string()
-                    },
-                    _ => {
-                        return self.read_identifier()
-                    },
+                        continue;
+                    }
+                    c if c.is_digit(10) => return self.read_number(),
+                    '"' => return self.read_string(),
+                    _ => return self.read_identifier(),
                 }
             } else {
-                return Err(UnexpectedEndOfInput.into())
+                return Err(UnexpectedEndOfInput.into());
             }
         }
     }
 
-
-    fn can_read(&self) -> bool { self.position < self.to_read.len() }
-    fn peek_char(&self) -> char { self.to_read[self.position] }
+    fn can_read(&self) -> bool {
+        self.position < self.to_read.len()
+    }
+    fn peek_char(&self) -> char {
+        self.to_read[self.position]
+    }
 
     fn consume_char(&mut self) -> char {
         let ch = self.peek_char();
@@ -89,9 +88,7 @@ impl Tokenizer {
             if self.can_read() {
                 match self.peek_char() {
                     '[' | ']' | '{' | '}' | '(' | ')' | ' ' => break,
-                    _ => {
-                        current_token.push(self.consume_char())
-                    },
+                    _ => current_token.push(self.consume_char()),
                 }
             } else {
                 break;
@@ -109,8 +106,8 @@ impl Tokenizer {
                 match self.peek_char() {
                     '"' => {
                         self.consume_char();
-                        break
-                    },
+                        break;
+                    }
                     '\\' => {
                         self.consume_char(); // consume '/'
                         let to_escape = self.consume_char();
@@ -130,7 +127,7 @@ impl Tokenizer {
             'n' => '\n',
             't' => '\t',
             '\\' => '\\',
-            _ => return Err(NotAnEscapableCharacter(c).into())
+            _ => return Err(NotAnEscapableCharacter(c).into()),
         })
     }
 
@@ -142,10 +139,10 @@ impl Tokenizer {
                     '.' => current_token.push(self.consume_char()),
                     c if c.is_digit(10) => current_token.push(self.consume_char()),
                     ' ' | ',' | ')' | ']' | '}' | '\n' | '\t' => break,
-                    _ => return Err(InvalidNumberCharacter(self.consume_char()).into())
+                    _ => return Err(InvalidNumberCharacter(self.consume_char()).into()),
                 }
             } else {
-                break
+                break;
             }
         }
 
@@ -156,7 +153,6 @@ impl Tokenizer {
 #[cfg(test)]
 mod test {
     use super::*;
-
 
     mod basic {
         use super::*;
@@ -180,7 +176,10 @@ mod test {
             let mut tokenizer = Tokenizer::from_string(code);
 
             // expect
-            assert_eq!(Token::Value("some string".to_owned(), ValueType::String), tokenizer.next().unwrap())
+            assert_eq!(
+                Token::Value("some string".to_owned(), ValueType::String),
+                tokenizer.next().unwrap()
+            )
         }
 
         #[test]
@@ -190,7 +189,10 @@ mod test {
             let mut tokenizer = Tokenizer::from_string(code);
 
             // expect
-            assert_eq!(Token::Value("1234".to_owned(), ValueType::Number), tokenizer.next().unwrap())
+            assert_eq!(
+                Token::Value("1234".to_owned(), ValueType::Number),
+                tokenizer.next().unwrap()
+            )
         }
 
         #[test]
@@ -200,7 +202,10 @@ mod test {
             let mut tokenizer = Tokenizer::from_string(code);
 
             // expect
-            assert_eq!(Token::Value("12.34".to_owned(), ValueType::Number), tokenizer.next().unwrap())
+            assert_eq!(
+                Token::Value("12.34".to_owned(), ValueType::Number),
+                tokenizer.next().unwrap()
+            )
         }
 
         #[test]
@@ -210,7 +215,10 @@ mod test {
             let mut tokenizer = Tokenizer::from_string(code);
 
             // expect
-            assert_eq!(Token::Value("123".to_owned(), ValueType::Number), tokenizer.next().unwrap())
+            assert_eq!(
+                Token::Value("123".to_owned(), ValueType::Number),
+                tokenizer.next().unwrap()
+            )
         }
 
         #[test]
@@ -220,7 +228,10 @@ mod test {
             let mut tokenizer = Tokenizer::from_string(code);
 
             // expect
-            assert_eq!(Token::Value("123".to_owned(), ValueType::Number), tokenizer.next().unwrap())
+            assert_eq!(
+                Token::Value("123".to_owned(), ValueType::Number),
+                tokenizer.next().unwrap()
+            )
         }
     }
 
@@ -232,7 +243,10 @@ mod test {
             let mut tokenizer = Tokenizer::from_string(&code);
 
             // expect
-            assert_eq!(Token::Value(format!("some{}string", escaped), ValueType::String), tokenizer.next().unwrap())
+            assert_eq!(
+                Token::Value(format!("some{}string", escaped), ValueType::String),
+                tokenizer.next().unwrap()
+            )
         }
     }
 
@@ -244,7 +258,10 @@ mod test {
 
         // expect
         assert_eq!(Token::LeftParen, tokenizer.next().unwrap());
-        assert_eq!(Token::Identifier("some-func".to_owned()), tokenizer.next().unwrap());
+        assert_eq!(
+            Token::Identifier("some-func".to_owned()),
+            tokenizer.next().unwrap()
+        );
         assert_eq!(Token::RightParen, tokenizer.next().unwrap());
     }
 
@@ -256,12 +273,26 @@ mod test {
 
         // expect
         assert_eq!(Token::LeftParen, tokenizer.next().unwrap());
-        assert_eq!(Token::Identifier("some-func".to_owned()), tokenizer.next().unwrap());
-        assert_eq!(Token::Identifier("ident".to_owned()), tokenizer.next().unwrap());
-        assert_eq!(Token::Value("string".to_owned(), ValueType::String), tokenizer.next().unwrap());
-        assert_eq!(Token::Value("10".to_owned(), ValueType::Number), tokenizer.next().unwrap());
-        assert_eq!(Token::Value("12.6".to_owned(), ValueType::Number), tokenizer.next().unwrap());
+        assert_eq!(
+            Token::Identifier("some-func".to_owned()),
+            tokenizer.next().unwrap()
+        );
+        assert_eq!(
+            Token::Identifier("ident".to_owned()),
+            tokenizer.next().unwrap()
+        );
+        assert_eq!(
+            Token::Value("string".to_owned(), ValueType::String),
+            tokenizer.next().unwrap()
+        );
+        assert_eq!(
+            Token::Value("10".to_owned(), ValueType::Number),
+            tokenizer.next().unwrap()
+        );
+        assert_eq!(
+            Token::Value("12.6".to_owned(), ValueType::Number),
+            tokenizer.next().unwrap()
+        );
         assert_eq!(Token::RightParen, tokenizer.next().unwrap());
     }
 }
-

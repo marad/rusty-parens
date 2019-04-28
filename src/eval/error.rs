@@ -1,6 +1,6 @@
-use failure::Error;
 use super::scope::ScopeError;
 use crate::reader::Expression;
+use failure::Error;
 
 #[derive(Debug, Fail)]
 pub enum EvalError {
@@ -25,4 +25,3 @@ impl From<ScopeError> for EvalError {
         EvalError::ScopeError(err)
     }
 }
-

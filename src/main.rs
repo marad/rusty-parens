@@ -1,15 +1,15 @@
 #[macro_use]
 extern crate failure;
 
+mod eval;
 mod reader;
 mod tokenizer;
-mod eval;
 
-use std::io;
-use crate::reader::{Expression, Reader, Function};
-use failure::Error;
-use eval::eval;
 use crate::eval::Scope;
+use crate::reader::{Expression, Function, Reader};
+use eval::eval;
+use failure::Error;
+use std::io;
 use std::io::Write;
 
 fn main() -> Result<(), Error> {
@@ -29,7 +29,8 @@ fn main() -> Result<(), Error> {
 }
 
 fn read() -> Result<Expression, Error> {
-    print!("> "); io::stdout().flush()?;
+    print!("> ");
+    io::stdout().flush()?;
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer)?;
     Reader::from_string(&buffer).read()
@@ -41,8 +42,7 @@ fn print(expr: Expression) {
 
 fn integer_add(exprs: &[Expression]) -> Result<Expression, Error> {
     match exprs {
-        [Expression::Integer(a), Expression::Integer(b)] =>
-            Ok(Expression::Integer(a+b)),
+        [Expression::Integer(a), Expression::Integer(b)] => Ok(Expression::Integer(a + b)),
         _ => Ok(Expression::String("Incompatible types".to_owned())),
     }
 }

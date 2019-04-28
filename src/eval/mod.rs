@@ -1,17 +1,15 @@
-mod scope;
 mod error;
+mod scope;
 
 use crate::reader::Expression as Expr;
-pub use scope::{Scope, ScopeError};
 use error::EvalError;
+pub use scope::{Scope, ScopeError};
 
 pub fn eval(scope: &mut Scope, expr: &Expr) -> Result<Expr, EvalError> {
     match expr {
-        Expr::Identifier(ident) =>
-            Ok(scope.get(ident)?.clone()),
-        Expr::List(data) =>
-            eval_list(scope, &data),
-        c => Ok(c.clone())
+        Expr::Identifier(ident) => Ok(scope.get(ident)?.clone()),
+        Expr::List(data) => eval_list(scope, &data),
+        c => Ok(c.clone()),
     }
 }
 
@@ -19,7 +17,7 @@ fn eval_list(scope: &mut Scope, list: &[Expr]) -> Result<Expr, EvalError> {
     let func = eval(scope, &list[0])?;
     match func {
         Expr::Fn(func) => Ok(func.call(&list[1..])?),
-        expr => Err(EvalError::NotAFunction(expr))
+        expr => Err(EvalError::NotAFunction(expr)),
     }
 }
 
@@ -29,10 +27,10 @@ mod test {
 
     mod basic {
         use super::*;
-        use crate::reader::Reader;
         use crate::reader::Expression::Integer;
-        use failure::Error;
         use crate::reader::Function;
+        use crate::reader::Reader;
+        use failure::Error;
 
         #[test]
         fn should_eval_values_to_themselves() -> Result<(), Error> {
@@ -61,9 +59,18 @@ mod test {
             scope.put(&"string", string_expr.clone());
 
             // expect
-            assert_eq!(integer_expr, eval(&mut scope, &Expr::Identifier("integer".to_owned()))?);
-            assert_eq!(float_expr, eval(&mut scope, &Expr::Identifier("float".to_owned()))?);
-            assert_eq!(string_expr, eval(&mut scope, &Expr::Identifier("string".to_owned()))?);
+            assert_eq!(
+                integer_expr,
+                eval(&mut scope, &Expr::Identifier("integer".to_owned()))?
+            );
+            assert_eq!(
+                float_expr,
+                eval(&mut scope, &Expr::Identifier("float".to_owned()))?
+            );
+            assert_eq!(
+                string_expr,
+                eval(&mut scope, &Expr::Identifier("string".to_owned()))?
+            );
 
             Ok(())
         }
@@ -71,9 +78,9 @@ mod test {
         // TODO: test eval empty list
         // TODO: test eval list with "not" a function as a first arg
         #[test]
-        fn should_evaluate_functions() -> Result<(), Error>{
+        fn should_evaluate_functions() -> Result<(), Error> {
             // given
-            let native_func : fn(&[Expression]) -> Result<Expression, Error> =
+            let native_func: fn(&[Expression]) -> Result<Expression, Error> =
                 |exprs| Ok(exprs.first().unwrap().clone());
             let func = Expr::Fn(Function::Native(native_func));
             let mut scope = Scope::new();

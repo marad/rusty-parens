@@ -1,11 +1,11 @@
-use crate::tokenizer::{Tokenizer, Token, ValueType};
-use failure::Error;
-use std::cell::RefCell;
 use crate::reader::Expression::*;
-use std::string::String as StdString;
-use std::fmt::{Debug, Formatter};
+use crate::tokenizer::{Token, Tokenizer, ValueType};
+use failure::Error;
 use std::any::Any;
+use std::cell::RefCell;
 use std::fmt::Display;
+use std::fmt::{Debug, Formatter};
+use std::string::String as StdString;
 
 #[derive(Clone)]
 pub enum Function {
@@ -29,10 +29,8 @@ impl PartialEq<Function> for Function {
 impl Function {
     pub fn call(&self, args: &[Expression]) -> Result<Expression, Error> {
         match self {
-            Function::Native(f) =>
-                f(args),
-            Function::Regular(_exprs) =>
-                unimplemented!(),
+            Function::Native(f) => f(args),
+            Function::Regular(_exprs) => unimplemented!(),
         }
     }
 }
@@ -57,9 +55,12 @@ impl Display for Expression {
             Expression::String(value) => f.write_fmt(format_args!("{}", value))?,
             Expression::List(values) => {
                 f.write_str("[")?;
-                values.iter().map(|s| Display::fmt(s, f)).collect::<Result<Vec<_>, _>>()?;
+                values
+                    .iter()
+                    .map(|s| Display::fmt(s, f))
+                    .collect::<Result<Vec<_>, _>>()?;
                 f.write_str("]")?;
-            },
+            }
         }
         Ok(())
     }
@@ -72,7 +73,7 @@ pub struct Reader {
 impl Reader {
     pub fn from_string(code: &str) -> Self {
         Self {
-            tokenizer: RefCell::new(Tokenizer::from_string(code))
+            tokenizer: RefCell::new(Tokenizer::from_string(code)),
         }
     }
 
@@ -83,14 +84,10 @@ impl Reader {
 
     fn read_form(&self, token: Token) -> Result<Expression, Error> {
         Ok(match token {
-            Token::Identifier(ident) =>
-                Expression::Identifier(ident),
-            Token::Value(value, ValueType::String) =>
-                Expression::String(value),
-            Token::Value(value, ValueType::Number) =>
-                self.read_number(&value)?,
-            Token::LeftParen =>
-                self.read_list()?,
+            Token::Identifier(ident) => Expression::Identifier(ident),
+            Token::Value(value, ValueType::String) => Expression::String(value),
+            Token::Value(value, ValueType::Number) => self.read_number(&value)?,
+            Token::LeftParen => self.read_list()?,
             _ => Expression::Identifier("--".to_owned()), // todo error
         })
     }
@@ -99,8 +96,7 @@ impl Reader {
         Ok(if value.contains('.') {
             let val = value.parse::<f32>()?;
             Expression::Float(val)
-        }
-        else {
+        } else {
             let val = value.parse::<i32>()?;
             Expression::Integer(val)
         })
@@ -182,10 +178,13 @@ mod test {
             let reader = Reader::from_string(code);
 
             // expect
-            assert_eq!(List(vec![
-                Identifier("say-hello".to_owned()),
-                String("John".to_owned()),
-            ]), reader.read()?);
+            assert_eq!(
+                List(vec![
+                    Identifier("say-hello".to_owned()),
+                    String("John".to_owned()),
+                ]),
+                reader.read()?
+            );
             Ok(())
         }
     }
@@ -197,14 +196,17 @@ mod test {
         let reader = Reader::from_string(code);
 
         // expect
-        assert_eq!(List(vec![
-            Identifier("say-hello".to_owned()),
+        assert_eq!(
             List(vec![
-                Identifier("str".to_owned()),
-                String("John".to_owned()),
-                Identifier("surname".to_owned())
+                Identifier("say-hello".to_owned()),
+                List(vec![
+                    Identifier("str".to_owned()),
+                    String("John".to_owned()),
+                    Identifier("surname".to_owned())
                 ]),
-        ]), reader.read()?);
+            ]),
+            reader.read()?
+        );
         Ok(())
     }
 }

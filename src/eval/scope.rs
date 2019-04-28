@@ -1,14 +1,14 @@
-use std::collections::HashMap;
 use crate::reader::Expression;
+use std::collections::HashMap;
 
 pub struct Scope {
-    names: HashMap<String, Expression>
+    names: HashMap<String, Expression>,
 }
 
 impl Scope {
     pub fn new() -> Self {
         Self {
-            names: HashMap::new()
+            names: HashMap::new(),
         }
     }
 
@@ -17,7 +17,9 @@ impl Scope {
     }
 
     pub fn get(&self, name: &str) -> Result<Expression, ScopeError> {
-        self.names.get(name).ok_or_else(||ScopeError::IdentifierNotFound(name.to_string()))
+        self.names
+            .get(name)
+            .ok_or_else(|| ScopeError::IdentifierNotFound(name.to_string()))
             .map(Clone::clone)
     }
 }
@@ -25,5 +27,5 @@ impl Scope {
 #[derive(Debug, Fail)]
 pub enum ScopeError {
     #[fail(display = "Identifier not found in scope: {}", _0)]
-    IdentifierNotFound(String)
+    IdentifierNotFound(String),
 }
