@@ -16,7 +16,13 @@ pub fn eval(scope: &mut Scope, expr: &Expression) -> Result<Expression, EvalErro
 fn eval_list(scope: &mut Scope, list: &[Expression]) -> Result<Expression, EvalError> {
     let func = eval(scope, &list[0])?;
     match func {
-        Expression::Fn(func) => Ok(func.call(&list[1..])?),
+        Expression::Fn(func) => {
+            let args = list[1..]
+                .iter()
+                .map(|expr| eval(scope, expr))
+                .collect::<Result<Vec<_>, _>>()?;
+            Ok(func.call(&args)?)
+        },
         expr => Err(EvalError::NotAFunction(expr)),
     }
 }
@@ -92,6 +98,25 @@ mod test {
 
             // then
             assert_eq!(Expr::Integer(5), result);
+            Ok(())
+        }
+
+        #[test]
+        fn should_eval_function_args() -> Result<(), Error> {
+            // given
+            let native_func: fn(&[Expression]) -> Result<Expression, Error> =
+                |exprs| Ok(exprs.first().unwrap().clone());
+            let func = Expr::Fn(Function::Native(native_func));
+            let mut scope = Scope::new();
+            scope.put(&"identity", func.clone());
+            let expr = Reader::from_string("(identity (identity 5))").read()?;
+
+            // when
+            let result = eval(&mut scope, &expr)?;
+
+            // then
+            assert_eq!(Expr::Integer(5), result);
+
             Ok(())
         }
     }
