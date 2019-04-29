@@ -7,6 +7,9 @@ pub enum EvalError {
     #[fail(display = "{} is not a function", _0)]
     NotAFunction(Expression),
 
+    #[fail(display = "Empty list is not a valid function call")]
+    EmptyList,
+
     #[fail(display = "Scope error: {}", _0)]
     ScopeError(ScopeError),
 

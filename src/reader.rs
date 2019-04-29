@@ -54,12 +54,12 @@ impl Display for Expression {
             Expression::Identifier(value) => f.write_fmt(format_args!("{}", value))?,
             Expression::String(value) => f.write_fmt(format_args!("{}", value))?,
             Expression::List(values) => {
-                f.write_str("[")?;
+                f.write_str("(")?;
                 values
                     .iter()
                     .map(|s| Display::fmt(s, f))
                     .collect::<Result<Vec<_>, _>>()?;
-                f.write_str("]")?;
+                f.write_str(")")?;
             }
         }
         Ok(())
